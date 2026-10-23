@@ -1,0 +1,41 @@
+@model FrameRent.Web.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center fw-bold mb-3">Sign In</h3>
+                <p class="text-center text-muted small mb-4">Access your FrameRent client account</p>
+
+                <form asp-action="Login" method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" placeholder="client@framerent.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Sign In</button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <span class="text-muted small">Don't have an account? </span>
+                    <a asp-action="Register" class="small fw-bold">Register as client</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

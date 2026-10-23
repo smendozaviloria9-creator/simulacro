@@ -1,0 +1,12 @@
+/home/sebastian/simulacro/src/FrameRent.Domain/bin/Debug/net10.0/FrameRent.Domain.deps.json
+/home/sebastian/simulacro/src/FrameRent.Domain/bin/Debug/net10.0/FrameRent.Domain.dll
+/home/sebastian/simulacro/src/FrameRent.Domain/bin/Debug/net10.0/FrameRent.Domain.pdb
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.AssemblyInfoInputs.cache
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.AssemblyInfo.cs
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.csproj.CoreCompileInputs.cache
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.sourcelink.json
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.dll
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/refint/FrameRent.Domain.dll
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/FrameRent.Domain.pdb
+/home/sebastian/simulacro/src/FrameRent.Domain/obj/Debug/net10.0/ref/FrameRent.Domain.dll

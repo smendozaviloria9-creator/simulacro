@@ -1,0 +1,83 @@
+@model FrameRent.Application.DTOs.Equipment.EquipmentDto
+@{
+    ViewData["Title"] = Model.Name;
+    var availability = ViewBag.Availability as FrameRent.Application.DTOs.Equipment.EquipmentAvailabilityDto;
+    string? error = ViewBag.AvailabilityError as string;
+    DateOnly? from = ViewBag.From as DateOnly?;
+    DateOnly? to = ViewBag.To as DateOnly?;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm mb-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Catalog
+                </a>
+
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge bg-secondary mb-2">@Model.Category</span>
+                        <h2 class="fw-bold">@Model.Name</h2>
+                    </div>
+                    <div class="text-end">
+                        <span class="fs-3 fw-bold text-primary">$@Model.DailyRate.ToString("0.00")</span>
+                        <div class="text-muted small">Daily rate</div>
+                    </div>
+                </div>
+
+                <p class="text-secondary mb-4">@Model.Description</p>
+
+                <div class="p-3 bg-light rounded mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2 text-primary"></i> Check Availability</h5>
+                    <form method="get" asp-action="Details" class="row g-3 align-items-end">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">From</label>
+                            <input type="date" name="from" class="form-control form-control-sm" value="@(from?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">To</label>
+                            <input type="date" name="to" class="form-control form-control-sm" value="@(to?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd"))" required />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm w-100">Check</button>
+                        </div>
+                    </form>
+
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-warning mt-3 mb-0 small">
+                            <i class="bi bi-exclamation-circle me-1"></i> @error
+                        </div>
+                    }
+                    else if (availability != null)
+                    {
+                        <div class="mt-3 p-3 bg-white rounded border">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <div class="text-muted small">Total Units</div>
+                                    <div class="fw-bold fs-5">@availability.TotalUnits</div>
+                                </div>
+                                <div class="col">
+                                    <div class="text-muted small">Already Booked</div>
+                                    <div class="fw-bold fs-5 text-danger">@availability.RentedUnits</div>
+                                </div>
+                                <div class="col">
+                                    <div class="text-muted small">Available Units</div>
+                                    <div class="fw-bold fs-5 text-success">@availability.AvailableUnits</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-grid">
+                    <a asp-action="Rent" asp-route-id="@Model.Id" class="btn btn-primary btn-lg">
+                        <i class="bi bi-bag-plus me-1"></i> Proceed to Rent
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

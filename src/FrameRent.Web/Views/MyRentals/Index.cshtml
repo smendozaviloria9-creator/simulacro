@@ -1,0 +1,111 @@
+@using FrameRent.Domain.Enums
+@model IEnumerable<FrameRent.Application.DTOs.Rental.RentalResponseDto>
+@{
+    ViewData["Title"] = "My Rentals";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">My Rentals</h2>
+        <p class="text-muted mb-0">Track all your equipment rental bookings and statuses</p>
+    </div>
+    <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> New Rental
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card shadow-sm border-0 text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
+            <h5 class="fw-bold">No rentals yet</h5>
+            <p class="text-muted small">You haven't requested any audiovisual equipment rentals yet.</p>
+            <a asp-controller="Catalog" asp-action="Index" class="btn btn-outline-primary btn-sm mt-2">Explore Catalog</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive bg-white rounded shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Equipment</th>
+                    <th>Quantity</th>
+                    <th>Dates</th>
+                    <th>Total Cost</th>
+                    <th>Late Fee</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">#@item.Id</td>
+                        <td>
+                            <span class="fw-semibold">@item.EquipmentName</span>
+                        </td>
+                        <td>@item.Quantity</td>
+                        <td>
+                            <small class="text-muted d-block">@item.StartDate.ToString("MMM dd, yyyy")</small>
+                            <small class="fw-bold">to @item.EndDate.ToString("MMM dd, yyyy")</small>
+                        </td>
+                        <td class="fw-bold text-primary">$@item.TotalCost.ToString("0.00")</td>
+                        <td>
+                            @if (item.LateFee > 0)
+                            {
+                                <span class="badge bg-danger">$@item.LateFee.ToString("0.00")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">-</span>
+                            }
+                        </td>
+                        <td>
+                            @switch (item.Status)
+                            {
+                                case RentalStatus.Pending:
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Pending</span>
+                                    break;
+                                case RentalStatus.Approved:
+                                    <span class="badge bg-info text-dark"><i class="bi bi-check-lg me-1"></i> Approved</span>
+                                    break;
+                                case RentalStatus.Delivered:
+                                    <span class="badge bg-primary"><i class="bi bi-truck me-1"></i> Delivered</span>
+                                    break;
+                                case RentalStatus.Returned:
+                                    <span class="badge bg-success"><i class="bi bi-box-arrow-in-down me-1"></i> Returned</span>
+                                    break;
+                                case RentalStatus.Rejected:
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Rejected</span>
+                                    break;
+                                case RentalStatus.Cancelled:
+                                    <span class="badge bg-secondary"><i class="bi bi-slash-circle me-1"></i> Cancelled</span>
+                                    break;
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if ((item.Status == RentalStatus.Pending || item.Status == RentalStatus.Approved) && DateOnly.FromDateTime(DateTime.UtcNow) < item.StartDate)
+                            {
+                                <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel rental #@item.Id?');">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-x-lg me-1"></i> Cancel
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">-</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,62 @@
+@model FrameRent.Web.Models.RentEquipmentViewModel
+@{
+    ViewData["Title"] = "Rent " + Model.EquipmentName;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm mb-3">
+                    <i class="bi bi-arrow-left me-1"></i> Cancel
+                </a>
+
+                <h3 class="fw-bold mb-1">Request Equipment Rental</h3>
+                <p class="text-muted small mb-4">Submit your rental booking for <strong>@Model.EquipmentName</strong></p>
+
+                <form asp-action="Rent" method="post">
+                    <input type="hidden" asp-for="EquipmentId" />
+                    <input type="hidden" asp-for="EquipmentName" />
+                    <input type="hidden" asp-for="DailyRate" />
+                    <input type="hidden" asp-for="TotalUnits" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="p-3 bg-light rounded mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Daily Rate:</span>
+                            <span class="fw-bold text-primary">$@Model.DailyRate.ToString("0.00")</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Quantity" class="form-label fw-bold small"></label>
+                        <input asp-for="Quantity" class="form-control" type="number" min="1" />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label asp-for="StartDate" class="form-label fw-bold small"></label>
+                            <input asp-for="StartDate" class="form-control" type="date" />
+                            <span asp-validation-for="StartDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col">
+                            <label asp-for="EndDate" class="form-label fw-bold small"></label>
+                            <input asp-for="EndDate" class="form-control" type="date" />
+                            <span asp-validation-for="EndDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-1"></i> Note: Rentals are limited to a maximum of 15 days. Costs are calculated automatically.
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Submit Rental Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
