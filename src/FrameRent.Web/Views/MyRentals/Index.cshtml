@@ -1,3 +1,4 @@
+@inject FrameRent.Application.Interfaces.IDateTimeProvider Clock
 @using FrameRent.Domain.Enums
 @model IEnumerable<FrameRent.Application.DTOs.Rental.RentalResponseDto>
 @{
@@ -89,7 +90,7 @@ else
                             }
                         </td>
                         <td class="text-end">
-                            @if ((item.Status == RentalStatus.Pending || item.Status == RentalStatus.Approved) && DateOnly.FromDateTime(DateTime.UtcNow) < item.StartDate)
+                            @if ((item.Status == RentalStatus.Pending || item.Status == RentalStatus.Approved) && Clock.Today < item.StartDate)
                             {
                                 <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel rental #@item.Id?');">
                                     <input type="hidden" name="id" value="@item.Id" />

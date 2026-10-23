@@ -51,12 +51,12 @@ public class RentalsController : ControllerBase
     }
 
     [HttpPatch("{id:int}/cancel")]
+    [Authorize(Roles = "Client")]
     public async Task<IActionResult> CancelRental(int id, CancellationToken cancellationToken)
     {
-        string currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        bool isStaff = User.IsInRole("Staff");
+        string clientId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-        await _rentalService.CancelRentalAsync(id, currentUserId, isStaff, cancellationToken);
+        await _rentalService.CancelRentalAsync(id, clientId, cancellationToken);
         return NoContent();
     }
 

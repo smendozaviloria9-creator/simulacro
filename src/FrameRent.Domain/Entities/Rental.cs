@@ -111,10 +111,11 @@ public class Rental
         }
     }
 
-    public void Cancel(string requestingUserId, bool isStaff, DateOnly today)
+    public void Cancel(string requestingClientId, DateOnly today)
     {
-        if (!isStaff && requestingUserId != ClientId)
-            throw new DomainException("You can only cancel your own rentals.");
+        // Spec: only the client who owns the rental can cancel it (staff cannot).
+        if (requestingClientId != ClientId)
+            throw new ForbiddenException("You can only cancel your own rentals.");
 
         if (Status != RentalStatus.Pending && Status != RentalStatus.Approved)
             throw new DomainException($"Cannot cancel rental with status '{Status}'. Only Pending or Approved rentals can be cancelled.");

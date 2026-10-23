@@ -54,13 +54,23 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-            throw new DomainException("Invalid email or password.");
+        const string invalidCredentials = "Invalid email or password.";
+
+        var user = await _userManager.FindByEmailAsync(request.Email)
+            ?? throw new UnauthorizedException(invalidCredentials);
+
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new UnauthorizedException("Account temporarily locked due to multiple failed login attempts. Try again later.");
 
         var isValidPassword = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!isValidPassword)
-            throw new DomainException("Invalid email or password.");
+        {
+            // Counts the failure; Identity locks the account after MaxFailedAccessAttempts.
+            await _userManager.AccessFailedAsync(user);
+            throw new UnauthorizedException(invalidCredentials);
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         var roles = await _userManager.GetRolesAsync(user);
         string primaryRole = roles.FirstOrDefault() ?? "Client";
@@ -71,9 +81,18 @@ public class AuthService : IAuthService
 
     private Task<string> GenerateJwtTokenAsync(ApplicationUser user, string role)
     {
-        var jwtKey = _configuration["Jwt:Key"] ?? "FrameRentSecretKeyMustBeAtLeast32BytesLong!";
-        var jwtIssuer = _configuration["Jwt:Issuer"] ?? "FrameRentApi";
-        var jwtAudience = _configuration["Jwt:Audience"] ?? "FrameRentUsers";
+        // No hardcoded fallback: the key must come from user-secrets or environment variables.
+        var jwtKey = _configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+            throw new InvalidOperationException("JWT signing key 'Jwt:Key' is missing or shorter than 32 bytes.");
+
+        var jwtIssuer = _configuration["Jwt:Issuer"]
+            ?? throw new InvalidOperationException("Configuration 'Jwt:Issuer' is missing.");
+        var jwtAudience = _configuration["Jwt:Audience"]
+            ?? throw new InvalidOperationException("Configuration 'Jwt:Audience' is missing.");
+        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var minutes) && minutes > 0
+            ? minutes
+            : 120;
 
         var claims = new List<Claim>
         {
@@ -91,7 +110,7 @@ public class AuthService : IAuthService
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
             signingCredentials: creds
         );
 

@@ -29,7 +29,7 @@ public interface IRentalService
     Task<IEnumerable<RentalResponseDto>> GetRentalsByClientAsync(string clientId, CancellationToken cancellationToken = default);
     Task<RentalResponseDto?> GetRentalByIdAsync(int id, string currentUserId, bool isStaff, CancellationToken cancellationToken = default);
     Task<IEnumerable<RentalResponseDto>> GetAllRentalsAsync(RentalStatus? status = null, CancellationToken cancellationToken = default);
-    Task CancelRentalAsync(int id, string currentUserId, bool isStaff, CancellationToken cancellationToken = default);
+    Task CancelRentalAsync(int id, string clientId, CancellationToken cancellationToken = default);
     Task ApproveRentalAsync(int id, CancellationToken cancellationToken = default);
     Task RejectRentalAsync(int id, CancellationToken cancellationToken = default);
     Task DeliverRentalAsync(int id, CancellationToken cancellationToken = default);

@@ -38,13 +38,19 @@ public class AccountController : Controller
             return View(model);
         }
 
-        var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
+        var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: true);
         if (result.Succeeded)
         {
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Catalog");
+        }
+
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty, "Account temporarily locked due to multiple failed login attempts. Try again in 15 minutes.");
+            return View(model);
         }
 
         ModelState.AddModelError(string.Empty, "Invalid login credentials.");
@@ -84,7 +90,7 @@ public class AccountController : Controller
         {
             await _userManager.AddToRoleAsync(user, "Client");
             await _signInManager.SignInAsync(user, isPersistent: false);
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Catalog");
         }
 
         foreach (var error in result.Errors)
@@ -100,7 +106,7 @@ public class AccountController : Controller
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Index", "Catalog");
     }
 
     public IActionResult AccessDenied()

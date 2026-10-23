@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+
+# IDE / editor
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.swp
+
+# Local secrets and environment files (never commit)
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets.json
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

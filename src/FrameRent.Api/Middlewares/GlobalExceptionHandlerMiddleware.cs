@@ -1,5 +1,4 @@
 using FrameRent.Domain.Exceptions;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FrameRent.Api.Middlewares;
@@ -21,35 +20,54 @@ public class GlobalExceptionHandlerMiddleware
         {
             await _next(context);
         }
+        // Order matters: specific subclasses first, then the DomainException base.
+        catch (NotFoundException ex)
+        {
+            await WriteProblemAsync(context, StatusCodes.Status404NotFound, "Resource Not Found", ex.Message);
+        }
+        catch (ForbiddenException ex)
+        {
+            await WriteProblemAsync(context, StatusCodes.Status403Forbidden, "Forbidden", ex.Message);
+        }
+        catch (UnauthorizedException ex)
+        {
+            await WriteProblemAsync(context, StatusCodes.Status401Unauthorized, "Unauthorized", ex.Message);
+        }
         catch (DomainException ex)
         {
-            _logger.LogWarning(ex, "Domain validation failure: {Message}", ex.Message);
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-
-            var problem = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Business Rule Violation",
-                Detail = ex.Message
-            };
-
-            await context.Response.WriteAsJsonAsync(problem);
+            _logger.LogWarning("Business rule violation: {Message}", ex.Message);
+            await WriteProblemAsync(context, StatusCodes.Status400BadRequest, "Business Rule Violation", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred.");
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-
-            var problem = new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An internal server error occurred",
-                Detail = ex.Message
-            };
-
-            await context.Response.WriteAsJsonAsync(problem);
+            // Full details go to the server log only; the client gets a generic message
+            // so internal information (SQL, connection strings, stack traces) is never leaked.
+            _logger.LogError(ex, "Unhandled exception. TraceId: {TraceId}", context.TraceIdentifier);
+            await WriteProblemAsync(
+                context,
+                StatusCodes.Status500InternalServerError,
+                "An internal server error occurred",
+                $"An unexpected error occurred. Reference: {context.TraceIdentifier}");
         }
+    }
+
+    private static async Task WriteProblemAsync(HttpContext context, int statusCode, string title, string detail)
+    {
+        if (context.Response.HasStarted)
+            return;
+
+        context.Response.Clear();
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/problem+json";
+
+        var problem = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = detail,
+            Instance = context.Request.Path
+        };
+
+        await context.Response.WriteAsJsonAsync(problem);
     }
 }

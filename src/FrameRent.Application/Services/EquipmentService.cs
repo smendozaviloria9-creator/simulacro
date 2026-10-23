@@ -39,7 +39,7 @@ public class EquipmentService : IEquipmentService
     {
         var equipment = await _equipmentRepository.GetByIdAsync(equipmentId, cancellationToken);
         if (equipment == null)
-            throw new DomainException($"Equipment with ID {equipmentId} not found.");
+            throw new NotFoundException($"Equipment with ID {equipmentId} not found.");
 
         if (to <= from)
             throw new DomainException("End date ('to') must be after start date ('from').");
@@ -88,7 +88,7 @@ public class EquipmentService : IEquipmentService
     {
         var equipment = await _equipmentRepository.GetByIdAsync(id, cancellationToken);
         if (equipment == null)
-            throw new DomainException($"Equipment with ID {id} not found.");
+            throw new NotFoundException($"Equipment with ID {id} not found.");
 
         equipment.Update(dto.Name, dto.Category, dto.Description, dto.DailyRate, dto.TotalUnits);
         await _equipmentRepository.UpdateAsync(equipment, cancellationToken);
@@ -100,7 +100,7 @@ public class EquipmentService : IEquipmentService
     {
         var equipment = await _equipmentRepository.GetByIdAsync(id, cancellationToken);
         if (equipment == null)
-            throw new DomainException($"Equipment with ID {id} not found.");
+            throw new NotFoundException($"Equipment with ID {id} not found.");
 
         bool hasActiveRentals = await _equipmentRepository.HasActiveRentalsAsync(id, cancellationToken);
         equipment.Deactivate(hasActiveRentals);

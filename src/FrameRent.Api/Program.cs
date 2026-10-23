@@ -17,28 +17,31 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database configuration (PostgreSQL)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Secrets are NOT stored in appsettings.json: provide them with `dotnet user-secrets`
+// or the environment variable ConnectionStrings__DefaultConnection.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' is not configured. Set it with user-secrets or the ConnectionStrings__DefaultConnection environment variable.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Identity configuration
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequiredLength = 6;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+// Identity configuration (shared password + lockout policy)
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(IdentityConfig.ConfigureOptions)
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
-// JWT Authentication configuration
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "FrameRentSuperSecretSecureKey1234567890!";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "FrameRentApi";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "FrameRentUsers";
+// JWT Authentication configuration (no hardcoded fallback key)
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        "JWT signing key 'Jwt:Key' is missing or shorter than 32 bytes. Set it with user-secrets or the Jwt__Key environment variable.");
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("Configuration 'Jwt:Issuer' is missing.");
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException("Configuration 'Jwt:Audience' is missing.");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -47,7 +50,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -57,6 +60,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtIssuer,
         ValidateAudience = true,
         ValidAudience = jwtAudience,
+        ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 });
@@ -68,6 +72,7 @@ builder.Services.AddScoped<IEquipmentRepository, EquipmentRepository>();
 builder.Services.AddScoped<IRentalRepository, RentalRepository>();
 
 // Application Services
+builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IRentalService, RentalService>();
@@ -112,11 +117,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// CORS: only explicitly whitelisted origins (configure in Cors:AllowedOrigins)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("FrameRentCors", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
     });
 });
 
@@ -145,7 +153,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+app.UseCors("FrameRentCors");
 
 app.UseAuthentication();
 app.UseAuthorization();

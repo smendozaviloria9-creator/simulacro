@@ -27,7 +27,7 @@ public class RegisterViewModel
 
     [Required]
     [DataType(DataType.Password)]
-    [MinLength(6)]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters and include an uppercase letter, a lowercase letter and a digit.")]
     public string Password { get; set; } = string.Empty;
 
     [Required]
@@ -50,9 +50,9 @@ public class RentEquipmentViewModel
 
     [Required]
     [Display(Name = "Start Date")]
-    public DateOnly StartDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public DateOnly StartDate { get; set; }
 
     [Required]
     [Display(Name = "End Date")]
-    public DateOnly EndDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
+    public DateOnly EndDate { get; set; }
 }

@@ -5,6 +5,7 @@
     string? error = ViewBag.AvailabilityError as string;
     DateOnly? from = ViewBag.From as DateOnly?;
     DateOnly? to = ViewBag.To as DateOnly?;
+    DateOnly today = ViewBag.Today is DateOnly t ? t : DateOnly.FromDateTime(DateTime.Now);
 }
 
 <div class="row justify-content-center">
@@ -34,11 +35,11 @@
                         <input type="hidden" name="id" value="@Model.Id" />
                         <div class="col-md-5">
                             <label class="form-label small fw-bold">From</label>
-                            <input type="date" name="from" class="form-control form-control-sm" value="@(from?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" required />
+                            <input type="date" name="from" class="form-control form-control-sm" value="@(from?.ToString("yyyy-MM-dd") ?? today.ToString("yyyy-MM-dd"))" required />
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small fw-bold">To</label>
-                            <input type="date" name="to" class="form-control form-control-sm" value="@(to?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd"))" required />
+                            <input type="date" name="to" class="form-control form-control-sm" value="@(to?.ToString("yyyy-MM-dd") ?? today.AddDays(1).ToString("yyyy-MM-dd"))" required />
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-outline-primary btn-sm w-100">Check</button>

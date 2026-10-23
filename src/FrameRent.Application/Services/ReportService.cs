@@ -16,6 +16,7 @@ public class ReportService : IReportService
 
     public async Task<IEnumerable<TopEquipmentReportDto>> GetTopEquipmentReportAsync(int limit = 10, CancellationToken cancellationToken = default)
     {
+        limit = Math.Clamp(limit, 1, 50);
         var rawData = await _rentalRepository.GetTopRentedEquipmentAsync(limit, cancellationToken);
 
         return rawData.Select(pair => new TopEquipmentReportDto(

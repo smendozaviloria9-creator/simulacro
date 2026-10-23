@@ -32,7 +32,7 @@ public class MyRentalsController : Controller
 
         try
         {
-            await _rentalService.CancelRentalAsync(id, clientId, isStaff: false);
+            await _rentalService.CancelRentalAsync(id, clientId);
             TempData["SuccessMessage"] = $"Rental #{id} was cancelled successfully.";
         }
         catch (DomainException ex)

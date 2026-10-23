@@ -9,27 +9,33 @@ namespace FrameRent.Application.Services;
 
 public class RentalService : IRentalService
 {
+    private const int MaxActiveRentalsPerClient = 3;
+
     private readonly IRentalRepository _rentalRepository;
     private readonly IEquipmentRepository _equipmentRepository;
+    private readonly IDateTimeProvider _clock;
 
-    public RentalService(IRentalRepository rentalRepository, IEquipmentRepository equipmentRepository)
+    public RentalService(
+        IRentalRepository rentalRepository,
+        IEquipmentRepository equipmentRepository,
+        IDateTimeProvider clock)
     {
         _rentalRepository = rentalRepository;
         _equipmentRepository = equipmentRepository;
+        _clock = clock;
     }
 
     public async Task<RentalResponseDto> CreateRentalAsync(string clientId, RentalRequestDto dto, CancellationToken cancellationToken = default)
     {
-        var equipment = await _equipmentRepository.GetByIdAsync(dto.EquipmentId, cancellationToken);
-        if (equipment == null)
-            throw new DomainException($"Equipment with ID {dto.EquipmentId} not found.");
+        var equipment = await _equipmentRepository.GetByIdAsync(dto.EquipmentId, cancellationToken)
+            ?? throw new NotFoundException($"Equipment with ID {dto.EquipmentId} not found.");
 
         if (!equipment.IsActive)
             throw new DomainException("Cannot rent an inactive equipment.");
 
         // Rule 4: Client cannot have more than 3 pending or approved rentals
         int activeRentalsCount = await _rentalRepository.CountActiveByClientIdAsync(clientId, cancellationToken);
-        if (activeRentalsCount >= 3)
+        if (activeRentalsCount >= MaxActiveRentalsPerClient)
             throw new DomainException("Client limit reached: you cannot have more than 3 pending or approved rentals simultaneously.");
 
         // Rule 2: Check availability in the date range
@@ -38,8 +44,7 @@ public class RentalService : IRentalService
         if (dto.Quantity > availableUnits)
             throw new DomainException($"Not enough units available for the selected dates. Available: {Math.Max(0, availableUnits)}, Requested: {dto.Quantity}.");
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var rental = Rental.Create(clientId, equipment, dto.Quantity, dto.StartDate, dto.EndDate, today);
+        var rental = Rental.Create(clientId, equipment, dto.Quantity, dto.StartDate, dto.EndDate, _clock.Today);
 
         await _rentalRepository.AddAsync(rental, cancellationToken);
         return MapToDto(rental);
@@ -58,7 +63,7 @@ public class RentalService : IRentalService
             return null;
 
         if (!isStaff && rental.ClientId != currentUserId)
-            throw new DomainException("You do not have permission to view another client's rental.");
+            throw new ForbiddenException("You do not have permission to view another client's rental.");
 
         return MapToDto(rental);
     }
@@ -69,23 +74,18 @@ public class RentalService : IRentalService
         return rentals.Select(MapToDto);
     }
 
-    public async Task CancelRentalAsync(int id, string currentUserId, bool isStaff, CancellationToken cancellationToken = default)
+    public async Task CancelRentalAsync(int id, string clientId, CancellationToken cancellationToken = default)
     {
-        var rental = await _rentalRepository.GetByIdAsync(id, cancellationToken);
-        if (rental == null)
-            throw new DomainException($"Rental with ID {id} not found.");
+        var rental = await GetRentalOrThrowAsync(id, cancellationToken);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        rental.Cancel(currentUserId, isStaff, today);
+        rental.Cancel(clientId, _clock.Today);
 
         await _rentalRepository.UpdateAsync(rental, cancellationToken);
     }
 
     public async Task ApproveRentalAsync(int id, CancellationToken cancellationToken = default)
     {
-        var rental = await _rentalRepository.GetByIdAsync(id, cancellationToken);
-        if (rental == null)
-            throw new DomainException($"Rental with ID {id} not found.");
+        var rental = await GetRentalOrThrowAsync(id, cancellationToken);
 
         // Rule 6: Revalidate availability at approval time
         int rentedUnits = await _rentalRepository.GetRentedUnitsInDateRangeAsync(
@@ -105,9 +105,7 @@ public class RentalService : IRentalService
 
     public async Task RejectRentalAsync(int id, CancellationToken cancellationToken = default)
     {
-        var rental = await _rentalRepository.GetByIdAsync(id, cancellationToken);
-        if (rental == null)
-            throw new DomainException($"Rental with ID {id} not found.");
+        var rental = await GetRentalOrThrowAsync(id, cancellationToken);
 
         rental.Reject();
         await _rentalRepository.UpdateAsync(rental, cancellationToken);
@@ -115,9 +113,7 @@ public class RentalService : IRentalService
 
     public async Task DeliverRentalAsync(int id, CancellationToken cancellationToken = default)
     {
-        var rental = await _rentalRepository.GetByIdAsync(id, cancellationToken);
-        if (rental == null)
-            throw new DomainException($"Rental with ID {id} not found.");
+        var rental = await GetRentalOrThrowAsync(id, cancellationToken);
 
         rental.Deliver();
         await _rentalRepository.UpdateAsync(rental, cancellationToken);
@@ -125,15 +121,18 @@ public class RentalService : IRentalService
 
     public async Task<RentalResponseDto> ReturnRentalAsync(int id, DateOnly? returnDate, CancellationToken cancellationToken = default)
     {
-        var rental = await _rentalRepository.GetByIdAsync(id, cancellationToken);
-        if (rental == null)
-            throw new DomainException($"Rental with ID {id} not found.");
+        var rental = await GetRentalOrThrowAsync(id, cancellationToken);
 
-        var actualReturnDate = returnDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        rental.Return(actualReturnDate);
+        rental.Return(returnDate ?? _clock.Today);
 
         await _rentalRepository.UpdateAsync(rental, cancellationToken);
         return MapToDto(rental);
+    }
+
+    private async Task<Rental> GetRentalOrThrowAsync(int id, CancellationToken cancellationToken)
+    {
+        return await _rentalRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"Rental with ID {id} not found.");
     }
 
     private static RentalResponseDto MapToDto(Rental r) =>

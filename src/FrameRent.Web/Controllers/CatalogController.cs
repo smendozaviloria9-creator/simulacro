@@ -12,11 +12,13 @@ public class CatalogController : Controller
 {
     private readonly IEquipmentService _equipmentService;
     private readonly IRentalService _rentalService;
+    private readonly IDateTimeProvider _clock;
 
-    public CatalogController(IEquipmentService equipmentService, IRentalService rentalService)
+    public CatalogController(IEquipmentService equipmentService, IRentalService rentalService, IDateTimeProvider clock)
     {
         _equipmentService = equipmentService;
         _rentalService = rentalService;
+        _clock = clock;
     }
 
     [HttpGet]
@@ -35,6 +37,7 @@ public class CatalogController : Controller
 
         ViewBag.From = from;
         ViewBag.To = to;
+        ViewBag.Today = _clock.Today;
 
         if (from.HasValue && to.HasValue)
         {
@@ -67,8 +70,8 @@ public class CatalogController : Controller
             DailyRate = equipment.DailyRate,
             TotalUnits = equipment.TotalUnits,
             Quantity = 1,
-            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1))
+            StartDate = _clock.Today,
+            EndDate = _clock.Today.AddDays(1)
         };
 
         return View(model);
